@@ -14,7 +14,7 @@ from tmdb3 import searchMovie
 from tmdb3 import set_cache
 from tmdb3 import set_key
 
-dbFilename = '/home/memp/python/new/movies.db'
+dbFilename = '/home/memp/git/vice/python/movies.db'
 
 def parseArguments():
 
@@ -29,6 +29,7 @@ def getBasename(filename):
 	base = os.path.basename(filename)
 	base = os.path.splitext(base)[0]
 	base = base.replace('_', ' ')
+	base = base.replace(':', ' ')
 	return base
 
 def getSearchLength(s):
@@ -90,6 +91,10 @@ set_key('f5a1e6218573b468f59d654ebe6269f9')
 search = searchMovie(movie)
 start = 0
 while True:
+	if 0 == len(search):
+		print 'No matches found'
+		quit(0)
+
 	maxSearch = getSearchLength(search[start:]) + start
 
 	for i in range(start, maxSearch):
@@ -121,5 +126,4 @@ print
 movie = search[opt]
 m = importMovieData(movie)
 m.display()
-
-#print '	Genres: ' + ','.join(movie.genres)
+db.updateMovie(m)

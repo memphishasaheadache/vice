@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS movie_genres(
 		c = self.conn.cursor()
 		query = '''
 CREATE TABLE IF NOT EXISTS movie_persons(
-	moviePersonId integer primary key,
+	moviePersonId integer primary key autoincrement,
 	movieId integer references movies (movieId),
 	personId integer references persons (personId)
 )'''
@@ -129,3 +129,135 @@ CREATE TABLE IF NOT EXISTS storage(
 	regexpat text
 )'''
 		c.execute(query)
+
+	def updatePerson(self, person):
+
+		c = self.conn.cursor()
+		query = '''
+INSERT OR REPLACE INTO
+	persons(personId, name)
+VALUES
+	(?, ?)
+'''
+		try:
+			c.execute(query, (person.id, person.name))
+		except sqlite3.Error as e:
+			print "An error occurred:", e.args[0]
+
+	def checkForMoviePerson(self, movieId, personId):
+
+		c = self.conn.cursor()
+		query = '''
+SELECT
+	COUNT(*)
+FROM
+	movie_persons
+WHERE
+	movieId=? AND personId=?
+'''
+
+		try:
+			c.execute(query, (movieId, personId))
+			return c.fetchall()[0][0]
+		except sqlite3.Error as e:
+			print "An error occurred: ", e.args[0]
+
+	def updateMoviePerson(self, movieId, personId):
+
+		if self.checkForMoviePerson(movieId, personId):
+			return
+
+		c = self.conn.cursor()
+		query = '''
+INSERT INTO
+	movie_persons(movieId, personId)
+VALUES
+	(?, ?)
+'''
+		try:
+			c.execute(query, (movieId, personId))
+		except sqlite3.Error as e:
+			print "An error occurred:", e.args[0]
+
+	def updateCast(self, movie):
+
+		c = movie.cast
+		while c:
+			self.updatePerson(c)
+			self.updateMoviePerson(movie.id, c.id)
+			c = c.next
+
+	def checkForCollectionMovie(self, collectionId, movieId):
+
+		c = self.conn.cursor()
+		query = '''
+SELECT
+	COUNT(*)
+FROM
+	collection_movies
+WHERE
+	collectionId=? AND movieId=?
+'''
+
+		try:
+			c.execute(query, (collectionId, movieId))
+			return c.fetchall()[0][0]
+		except sqlite3.Error as e:
+			print "An error occurred: ", e.args[0]
+
+	def updateCollectionMovies(self, collectionId, movieId):
+
+		print 'heya'
+		if self.checkForCollectionMovie(collectionId, movieId):
+			return
+
+		c = self.conn.cursor()
+		query = '''
+INSERT INTO
+	collection_movies(collectionId, movieId)
+VALUES
+	(?, ?)
+'''
+		try:
+			c.execute(query, (collectionId, movieId))
+		except sqlite3.Error as e:
+			print "An error occurred:", e.args[0]
+
+	def updateCollection(self, movie):
+
+		if (None == movie.collection):
+			return
+
+		collection = movie.collection
+		c = self.conn.cursor()
+		query = '''
+INSERT OR REPLACE INTO
+	collections(collectionId, name, overview)
+VALUES
+	(?, ?, ?)
+
+'''
+
+		try:
+			c.execute(query, (collection.id, collection.name, collection.overview))
+			self.updateCollectionMovies(collection.id, movie.id)
+		except sqlite3.Error as e:
+			print "An error occurred:", e.args[0]
+
+	def updateMovie(self, movie):
+
+		c = self.conn.cursor()
+		query = '''
+INSERT OR REPLACE INTO
+	movies(movieId, name, overview, rating, runtime, released)
+VALUES
+	(?, ?, ?, ?, ?, ?)
+'''
+		try:
+			c.execute(query, (movie.id, movie.name, movie.overview, movie.rating, movie.runtime, movie.released))
+			self.updateCast(movie)
+			self.updateCollection(movie)
+		except sqlite3.Error as e:
+			print "An error occurred:", e.args[0]
+
+		self.conn.commit()
