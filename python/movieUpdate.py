@@ -9,6 +9,7 @@ import sqlite3
 import pmovie
 import psql
 
+from flask import Flask
 from tmdb3 import Collection, Movie, Person
 from tmdb3 import searchMovie
 from tmdb3 import set_cache
@@ -71,59 +72,81 @@ def importMovieData(d):
 
 # Main
 
-args = parseArguments()
-file = args.file
-update = args.update
+#args = parseArguments()
+#file = args.file
+#update = args.update
 
-if (True == update):
-	print 'Updating all data'
+#if (True == update):
+#	print 'Updating all data'
 
-if (None == file):
-	quit()
+#if (None == file):
+#	quit()
 
-db = psql.movieDB(dbFilename)
-file = os.path.realpath(file)
-movie = getBasename(file)
+#db = psql.movieDB(dbFilename)
+#file = os.path.realpath(file)
+#movie = getBasename(file)
+
+
+#	print
+#	choice = raw_input('Choose which movie ([n]ext [q]uit): [' + str(start + 1) + '] ')
+
+#	if ('' == choice):
+#		choice = '1'
+#	elif ('n' == choice):
+#		start = maxSearch
+#	elif ('q' == choice):
+#		quit()
+
+#	if choice.isdigit():
+#		opt = int(choice) - 1
+#		try:
+#			if (search[opt]):
+#				break
+#		except IndexError:
+#			print 'Invalid choice'
+#			print
+#			continue
+#		except:
+#			print("World broken: ", sys.exc_info()[0])
+#			raise
+
+#print
+#movie = search[opt]
+#m = importMovieData(movie)
+#m.display()
+#db.updateMovie(m)
 
 set_cache(engine='file', filename='/tmp/tmdb.cache')
 set_key('f5a1e6218573b468f59d654ebe6269f9')
 
-search = searchMovie(movie)
-start = 0
-while True:
-	if 0 == len(search):
-		print 'No matches found'
-		quit(0)
+mFlask = Flask(__name__)
+@mFlask.route('/')
+def rootEndpoint():
+	return 'Pvice root endpoint\n'
 
-	maxSearch = getSearchLength(search[start:]) + start
+@mFlask.route('/search/<pattern>')
+def searchEndpoint(pattern):
+	return 'Search endpoint'
 
-	for i in range(start, maxSearch):
-		print str(i + 1) + '. ' + search[i].title
-	print
-	choice = raw_input('Choose which movie ([n]ext [q]uit): [' + str(start + 1) + '] ')
+@mFlask.route('/movieSearch/<movie>')
+def movieSearchEndpoint(movie):
 
-	if ('' == choice):
-		choice = '1'
-	elif ('n' == choice):
-		start = maxSearch
-	elif ('q' == choice):
-		quit()
+	search = searchMovie(movie)
+	start = 0
+	while True:
+		if 0 == len(search):
+			return "No matches found\n"
 
-	if choice.isdigit():
-		opt = int(choice) - 1
-		try:
-			if (search[opt]):
-				break
-		except IndexError:
-			print 'Invalid choice'
-			print
-			continue
-		except:
-			print("World broken: ", sys.exc_info()[0])
-			raise
+		maxSearch = getSearchLength(search[start:]) + start
 
-print
-movie = search[opt]
-m = importMovieData(movie)
-m.display()
-db.updateMovie(m)
+		retBuffer = ''
+		for i in range(start, maxSearch):
+			retBuffer = retBuffer + str(search[i].id) + '. ' + search[i].title + "\n"
+
+		return retBuffer
+
+@mFlask.route('/update/<movie>')
+def movieUpdateEndpoint(movie):
+
+	return 'Updating ' + movie + "\n"
+mFlask.run()
