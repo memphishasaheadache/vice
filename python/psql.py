@@ -207,7 +207,6 @@ WHERE
 
 	def updateCollectionMovies(self, collectionId, movieId):
 
-		print 'heya'
 		if self.checkForCollectionMovie(collectionId, movieId):
 			return
 
@@ -257,7 +256,9 @@ VALUES
 			c.execute(query, (movie.id, movie.name, movie.overview, movie.rating, movie.runtime, movie.released))
 			self.updateCast(movie)
 			self.updateCollection(movie)
+			self.conn.commit()
 		except sqlite3.Error as e:
 			print "An error occurred:", e.args[0]
+			return False
 
-		self.conn.commit()
+		return True
